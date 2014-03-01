@@ -1,4 +1,4 @@
-package dso.event.handler;
+package dso.event.handler.server;
 
 import dso.event.DSOEvent;
 import dso.thread.DSOServer;
@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 public class DSONoopEventHandler implements DSOEventHandler {
     private static final Logger log = Logger.getLogger("DSONoopEventHandler");
 
-    public DSONoopEventHandler(DSOServer dsoServer, DSOServerThread dsoServerThread) {
+    public DSONoopEventHandler() {
     }
 
     @Override

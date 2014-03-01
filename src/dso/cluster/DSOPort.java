@@ -1,5 +1,7 @@
 package dso.cluster;
 
+import dso.utils.EnvParam;
+
 public class DSOPort implements EnvParam<Integer> {
 
     public static final String ENV_NAME = "DSO_PORT";

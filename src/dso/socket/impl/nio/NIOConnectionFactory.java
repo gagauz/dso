@@ -52,7 +52,7 @@ public class NIOConnectionFactory implements ConnectionFactory {
 
             @Override
             public String getAddress() throws IOException {
-                return ssChannel.getLocalAddress().toString();
+                return "";// ssChannel.getLocalAddress().toString();
             }
 
             @Override

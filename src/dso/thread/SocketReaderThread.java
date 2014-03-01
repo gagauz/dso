@@ -3,7 +3,7 @@ package dso.thread;
 import dso.event.error.DSOEventErrorHandler;
 
 import dso.event.DSOEvent;
-import dso.event.handler.DSOEventHandler;
+import dso.event.handler.server.DSOEventHandler;
 import dso.stream.api.SocketObjectReader;
 import dso.stream.impl.io.DSOSocketReader;
 

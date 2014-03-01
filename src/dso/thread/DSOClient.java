@@ -1,14 +1,24 @@
 package dso.thread;
 
-import dso.DSO;
-import dso.event.*;
-import dso.socket.api.ConnectionFactory;
-import dso.socket.impl.io.IOConnectionFactory;
-
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import dso.event.DSOEvent;
+import dso.event.DSOJoinEvent;
+import dso.event.DSOLockEvent;
+import dso.event.DSONoopEvent;
+import dso.event.DSOShareObjectEvent;
+import dso.event.DSOUnlockEvent;
+import dso.event.handler.client.DSOCLientJoinEventHandler;
+import dso.event.handler.client.DSOClientLockEventHandler;
+import dso.event.handler.client.DSOClientShareObjectEventHandler;
+import dso.event.handler.server.DSOEventHandler;
+import dso.event.handler.server.DSONoopEventHandler;
+import dso.socket.api.ConnectionFactory;
+import dso.socket.impl.io.IOConnectionFactory;
 
 public class DSOClient extends SocketWriter implements DataSharer {
 
@@ -18,14 +28,24 @@ public class DSOClient extends SocketWriter implements DataSharer {
 
     protected Set<Long> lockWaitingQueue = new HashSet<Long>();
 
+    private final HashMap<Class<? extends DSOEvent>, DSOEventHandler> clientEventHandlers = new HashMap<Class<? extends DSOEvent>, DSOEventHandler>();
+
     public DSOClient() {
         this("0.0.0.0", 9999);
     }
 
     public DSOClient(String addr, int port) {
         super(connect(addr, port));
+
+        clientEventHandlers.put(DSOLockEvent.class, new DSOClientLockEventHandler(this));
+        clientEventHandlers.put(DSOJoinEvent.class, new DSOCLientJoinEventHandler(this));
+        clientEventHandlers.put(DSONoopEvent.class, new DSONoopEventHandler());
+        clientEventHandlers.put(DSOShareObjectEvent.class, new DSOClientShareObjectEventHandler(this));
+
         startReader();
+
         send(new DSOJoinEvent(this));
+
     }
 
     private static Socket connect(String host, int port) {
@@ -38,8 +58,7 @@ public class DSOClient extends SocketWriter implements DataSharer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            log.severe("Can't connetct to " + host + ":" + port
-                    + ". Trying to reconnect...");
+            log.severe("Can't connetct to " + host + ":" + port + ". Trying to reconnect...");
             try {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
@@ -50,13 +69,20 @@ public class DSOClient extends SocketWriter implements DataSharer {
 
     @Override
     public void handleEvent(DSOEvent event) {
-
-        if (event instanceof DSOShareObjectEvent) {
-            log.info(">>> Handle DSOShareObjectEvent");
-            super.handleEvent(event);
-            DSO.updateLocal(((DSOShareObjectEvent) event).getObject());
-            return;
+        try {
+            DSOEventHandler handler = clientEventHandlers.get(event.getClass());
+            if (null == handler) {
+                throw new IllegalStateException("Unable to resolve envent handler for " + event.getClass());
+            }
+            handler.handleEvent(event);
+        } catch (Exception e) {
+            handleError(e);
         }
+    }
+
+    @Override
+    public void noop() {
+        send(new DSONoopEvent());
     }
 
     @Override
@@ -67,13 +93,13 @@ public class DSOClient extends SocketWriter implements DataSharer {
 
     @Override
     public void lock(Object object, String name) {
-        //Request for lock, sleep until response
+        // Request for lock, sleep until response
         log.info("> request for lock " + object + " " + name);
         requestForLock(Thread.currentThread(), object, name);
-        while (!lockGranded(Thread.currentThread())) {
+        while (!isLockGranded(Thread.currentThread())) {
             Thread.yield();
         }
-        log.info("< lock granted");
+        log.info("<< lock granted");
     }
 
     @Override
@@ -81,7 +107,12 @@ public class DSOClient extends SocketWriter implements DataSharer {
         send(new DSOUnlockEvent(Thread.currentThread().getId(), object, name));
     }
 
-    private boolean lockGranded(Thread thread) {
+    public void grantLock(DSOLockEvent event) {
+        log.info(">> Grant lock for thread " + event.getThreadId());
+        lockWaitingQueue.remove(event.getThreadId());
+    }
+
+    private boolean isLockGranded(Thread thread) {
         return !lockWaitingQueue.contains(thread.getId());
     }
 

@@ -15,7 +15,7 @@ public class DSO {
 
     private static final Map<Integer, Object> objectMap = new HashMap<Integer, Object>();
 
-    private static DataSharer sharer;
+    public static DataSharer sharer;
 
     static {
         if (DSONodeMasterType.ALWAYS.isCurrent()) {
@@ -75,4 +75,9 @@ public class DSO {
         log.info("Unlock on object " + object + " " + string);
         sharer.unlock(object, string);
     }
+
+	public static void noop() {
+		log.info("Noop");
+		sharer.noop();
+	}
 }

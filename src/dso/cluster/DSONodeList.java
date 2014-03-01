@@ -3,6 +3,8 @@ package dso.cluster;
 import java.util.ArrayList;
 import java.util.List;
 
+import dso.utils.EnvParam;
+
 public class DSONodeList implements EnvParam<List<String>> {
     private static List<String> nodes;
 

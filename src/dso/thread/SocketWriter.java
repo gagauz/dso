@@ -3,7 +3,7 @@ package dso.thread;
 import dso.event.error.DSOEventErrorHandler;
 
 import dso.event.DSOEvent;
-import dso.event.handler.DSOEventHandler;
+import dso.event.handler.server.DSOEventHandler;
 import dso.stream.api.SocketObjectWriter;
 import dso.stream.impl.io.DSOSocketWriter;
 
@@ -47,7 +47,7 @@ public class SocketWriter implements DSOEventHandler, DSOEventErrorHandler {
     }
 
     public void startReader() {
-        readerThread = new SocketReaderThread(socket, this);
+        readerThread = new SocketReaderThread(socket, this, this);
         readerThread.start();
     }
 

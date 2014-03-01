@@ -1,43 +1,21 @@
 package dso.event;
 
-public class DSOLockEvent extends DSOEvent {
+public class DSOLockEvent extends DSOUnlockEvent {
 
-    private static final long serialVersionUID = -301137498978274273L;
-    private long threadId;
-    private String className;
-    private String methodName;
-    private int objectHash;
-    private transient int serverThreadHashCode;
+    private static final long serialVersionUID = -1102989500945048666L;
+
+    private transient int nodeId;
 
     public DSOLockEvent(long id, Object object, String name) {
-        this.threadId = id;
-        this.className = object.getClass().getName();
-        this.methodName = name;
-        this.objectHash = object.hashCode();
+        super(id, object, name);
     }
 
-    public long getThreadId() {
-        return threadId;
+    public int getNodeId() {
+        return nodeId;
     }
 
-    public String getClassName() {
-        return className;
-    }
-
-    public String getMethodName() {
-        return methodName;
-    }
-
-    public int getObjectHash() {
-        return objectHash;
-    }
-
-    public int getServerThreadHashCode() {
-        return serverThreadHashCode;
-    }
-
-    public void setServerThreadHashCode(int hashCode) {
-        this.serverThreadHashCode = hashCode;
+    public void setNodeId(int hashCode) {
+        this.nodeId = hashCode;
     }
 
 }

@@ -1,4 +1,4 @@
-package dso.cluster;
+package dso.utils;
 
 public interface EnvParam<V> {
     String getName();

@@ -4,21 +4,30 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import dso.annotation.Locked;
+import dso.annotation.Shared;
+
+@Shared
 public class BigData implements Serializable {
 
     private static int counter = 1;
 
     private static final long serialVersionUID = -5025247388620814377L;
 
-    private Integer id;
+    private final Integer id;
     private String name;
     private BigData parent;
     private List<BigData> children = new ArrayList<BigData>();
+
+    public BigData() {
+        id = ++counter;
+    }
 
     public String getName() {
         return name;
     }
 
+    @Locked
     public void setName(String name) {
         this.name = name;
     }
@@ -27,6 +36,7 @@ public class BigData implements Serializable {
         return parent;
     }
 
+    @Locked
     public void setParent(BigData newParent) {
         if (this == newParent) {
             throw new IllegalStateException();
@@ -44,15 +54,13 @@ public class BigData implements Serializable {
         return children;
     }
 
+    @Locked
     public void setChildren(List<BigData> children) {
         this.children = children;
     }
 
     @Override
     public int hashCode() {
-        if (null == id) {
-            id = counter++;
-        }
         return id;
     }
 
@@ -66,14 +74,15 @@ public class BigData implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("BigData <")
-                .append("id=")
-                .append(hashCode()).append(", ")
-                .append("name=").append(name).append(", ");
-        if (null != parent) {
-            sb.append("parent=").append(parent.hashCode()).append(", ");
-        }
-        sb.append("children=").append(children).append(">\n");
-        return sb.toString();
+        // StringBuilder sb = new StringBuilder("BigData <")
+        // .append("id=")
+        // .append(hashCode()).append(", ")
+        // .append("name=").append(name).append(", ");
+        // if (null != parent) {
+        // sb.append("parent=").append(parent.hashCode()).append(", ");
+        // }
+        // sb.append("children=").append(children).append(">\n");
+        // return sb.toString();
+        return this.getClass().getName() + "#" + hashCode();
     }
 }

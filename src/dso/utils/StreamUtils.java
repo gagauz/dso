@@ -31,7 +31,7 @@ public class StreamUtils {
         out.flush();
     }
 
-    public static String readString(InputStream in) throws Exception {
+    public static String readString(InputStream in) throws IOException {
         byte[] bytes = new byte[1024];
         int r = in.read(bytes);
         if (r >= 0) {

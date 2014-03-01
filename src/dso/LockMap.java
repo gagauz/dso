@@ -2,51 +2,86 @@ package dso;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.locks.ReentrantLock;
+
+import dso.event.DSOLockEvent;
 
 public class LockMap {
-    private final HashMap<Class<?>, HashMap<Integer, HashSet<String>>> hierarchyMap = new HashMap<Class<?>, HashMap<Integer, HashSet<String>>>();
 
-    public synchronized boolean tryLock(Object object, String method) {
+    private final ReentrantLock lock = new ReentrantLock(true);
+
+    private final HashMap<String, HashMap<Integer, HashSet<String>>> hierarchyMap = new HashMap<String, HashMap<Integer, HashSet<String>>>();
+
+    public boolean tryLock(DSOLockEvent event) {
+        return tryLock(event.getClassName(), event.getObjectHash(), event.getMethodName());
+    }
+
+    public boolean tryLock(Object object, String objectMethod) {
         if (null != object) {
-            if (null == method) {
-                method = "_dso_NULL";
-            }
-
-            HashMap<Integer, HashSet<String>> objects = hierarchyMap.get(object.getClass());
-            if (null != objects) {
-                HashSet<String> methods = objects.get(object.hashCode());
-                if (null != methods) {
-                    return methods.add(method);
-                } else {
-                    methods = new HashSet<String>();
-                    objects.put(object.hashCode(), methods);
-                    hierarchyMap.put(object.getClass(), objects);
-                }
-            } else {
-                HashSet<String> methods = new HashSet<String>();
-                methods.add(method);
-                objects = new HashMap<Integer, HashSet<String>>();
-                objects.put(object.hashCode(), methods);
-                hierarchyMap.put(object.getClass(), objects);
-            }
+            return tryLock(object.getClass().getName(), object.hashCode(), objectMethod);
         }
-
         return true;
     }
 
-    public synchronized void unlock(Object object, String method) {
+    public void unlock(Object object, String objectMethod) {
         if (null != object) {
-            if (null == method) {
-                method = "_dso_NULL";
+            unlock(object.getClass().getName(), object.hashCode(), objectMethod);
+        }
+    }
+
+    public boolean tryLock(String objectClass, int objectHash, String objectMethod) {
+        lock.lock();
+        try {
+
+            if (null == objectMethod) {
+                objectMethod = "_dso_NULL";
             }
 
-            HashMap<Integer, HashSet<String>> objects = hierarchyMap.get(object.getClass());
+            HashMap<Integer, HashSet<String>> lockedObjects = hierarchyMap.get(objectClass);
+            if (null != lockedObjects) {
+                HashSet<String> lockedMethods = lockedObjects.get(objectHash);
+                if (null != lockedMethods) {
+                    return lockedMethods.add(objectMethod);
+                } else {
+                    lockedMethods = new HashSet<String>();
+                    lockedObjects.put(objectHash, lockedMethods);
+                    hierarchyMap.put(objectClass, lockedObjects);
+                }
+            } else {
+                HashSet<String> methods = new HashSet<String>();
+                methods.add(objectMethod);
+                lockedObjects = new HashMap<Integer, HashSet<String>>();
+                lockedObjects.put(objectHash, methods);
+                hierarchyMap.put(objectClass, lockedObjects);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+        return true;
+
+    }
+
+    public void unlock(String objectClass, int objectHash, String objectMethod) {
+        lock.lock();
+        try {
+
+            if (null == objectMethod) {
+                objectMethod = "_dso_NULL";
+            }
+
+            HashMap<Integer, HashSet<String>> objects = hierarchyMap.get(objectClass);
             if (null != objects) {
-                HashSet<String> methods = objects.get(object.hashCode());
+                HashSet<String> methods = objects.get(objectHash);
                 if (null != methods) {
-                    methods.remove(method);
+                    methods.remove(objectMethod);
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
         }
     }
 

@@ -6,18 +6,20 @@ public class TestClient {
 
     public static void main(String[] args) {
         BigData b = Test.setup();
+
         while (true) {
             try {
-                for (int i = 0; i < 10; i++) {
-                    long t = System.currentTimeMillis();
-                    DSO.share(b);
-                    t = t - System.currentTimeMillis();
-                    Thread.sleep(3000);
-                }
+                long t = System.currentTimeMillis();
+                // DSO.share(b);
+                t = t - System.currentTimeMillis();
+                Thread.sleep(30);
+                DSO.lock(b, null);
+                DSO.share(b);
+                DSO.unlock(b, null);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
-
 }

@@ -1,4 +1,4 @@
-package dso.event.handler;
+package dso.event.handler.server;
 
 import dso.event.DSOEvent;
 import dso.event.DSOLockEvent;
@@ -23,7 +23,7 @@ public class DSOLockEventHandler implements DSOEventHandler {
     public void handleEvent(DSOEvent event) {
         log.info("** Handle lock event");
         DSOLockEvent lockEvent = (DSOLockEvent) event;
-        lockEvent.setServerThreadHashCode(dsoServerThread.hashCode());
-        dsoServer.addLockInQueue(lockEvent);
+        lockEvent.setNodeId(dsoServerThread.hashCode());
+        dsoServer.lock(lockEvent);
     }
 }

@@ -1,20 +1,23 @@
 package dso.thread;
 
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+
 import dso.LockMap;
 import dso.event.DSOEvent;
 import dso.event.DSOLockEvent;
+import dso.event.DSONoopEvent;
 import dso.event.DSOShareObjectEvent;
+import dso.event.DSOUnlockEvent;
 import dso.socket.api.ClientConnection;
 import dso.socket.api.ConnectionFactory;
 import dso.socket.api.ServerConnection;
 import dso.socket.impl.io.IOConnectionFactory;
-
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 public class DSOServer extends Thread implements DataSharer {
 
@@ -27,6 +30,7 @@ public class DSOServer extends Thread implements DataSharer {
     private static final Map<Integer, DSOServerThread> slaveNodes = new ConcurrentHashMap<Integer, DSOServerThread>();
     private static final ConnectionFactory connetcionFactory = new IOConnectionFactory();
     private ServerConnection server;
+    private Thread lockQueueChecker;
 
     public DSOServer() {
         setDaemon(true);
@@ -38,7 +42,7 @@ public class DSOServer extends Thread implements DataSharer {
     }
 
     public void stopServer() {
-        if (server != null) {
+        if (null != server) {
             for (DSOServerThread node : new ArrayList<DSOServerThread>(slaveNodes.values())) {
                 node.closeSocket();
             }
@@ -48,6 +52,10 @@ public class DSOServer extends Thread implements DataSharer {
                 e.printStackTrace();
             }
             interrupt();
+        }
+
+        if (null != lockQueueChecker) {
+            lockQueueChecker.interrupt();
         }
     }
 
@@ -61,6 +69,7 @@ public class DSOServer extends Thread implements DataSharer {
             throw new RuntimeException("Failed to start server", e);
         }
         super.start();
+        lockQueueChecker = startLockQueueChecker();
     }
 
     @Override
@@ -81,12 +90,23 @@ public class DSOServer extends Thread implements DataSharer {
     }
 
     public void propagate(DSOServerThread initiator, DSOEvent dsoEvent) {
-        log.info("Propagate to slaves ...");
+        log.info("Propagate to slaves " + dsoEvent.getClass());
         for (DSOServerThread slave : slaveNodes.values()) {
             if (!slave.equals(initiator)) {
                 log.info("Client <<< Push event to slave " + slave.hashCode());
                 slave.send(dsoEvent);
             }
+        }
+    }
+
+    public void pushToNode(int nodeId, DSOEvent dsoEvent) {
+        log.info("Propagate to one slave " + dsoEvent.getClass());
+        DSOServerThread slave = slaveNodes.get(nodeId);
+        if (null != slave) {
+            log.info("Client <<< Push event to slave " + slave.hashCode());
+            slave.send(dsoEvent);
+        } else {
+            throw new IllegalStateException("Unknown node ID " + nodeId);
         }
     }
 
@@ -102,34 +122,66 @@ public class DSOServer extends Thread implements DataSharer {
     }
 
     @Override
+    public void noop() {
+        propagate(null, new DSONoopEvent());
+    }
+
+    @Override
     public void share(Object object) {
         propagate(null, new DSOShareObjectEvent(object));
     }
 
     @Override
     public void lock(Object object, String method) {
-        log.info("server lock " + object + " : " + method);
+        log.info("waiting for local lock " + object + "." + method);
         while (!lockMap.tryLock(object, method)) {
             Thread.yield();
         }
+        log.info("+++++++++ lock aquired");
     }
 
     @Override
     public void unlock(Object object, String method) {
-        log.info("server unlock " + object + " : " + method);
+        log.info("server unlock " + object + "." + method);
         lockMap.unlock(object, method);
     }
 
-    public void addLockInQueue(DSOLockEvent lockEvent) {
+    public void lock(DSOLockEvent lockEvent) {
         log.info("Add lock event in queue");
         lockWaitingQueue.addLast(lockEvent);
     }
 
-    private void checkLockInQueue() {
-        for (DSOLockEvent lockEvent : new ArrayDeque<DSOLockEvent>(lockWaitingQueue)) {
-            if (lockMap.tryLock(lockEvent.getClassName(), lockEvent.getObjectHash(), lockEvent.getMethodName())) {
+    public void unlock(DSOUnlockEvent lockEvent) {
+        log.info("Unlock from client");
+        lockMap.unlock(lockEvent.getClassName(), lockEvent.getObjectHash(), lockEvent.getMethodName());
+    }
+
+    private Thread startLockQueueChecker() {
+        return new Thread() {
+            {
+                setDaemon(true);
+                start();
+            }
+
+            @Override
+            public void run() {
+                System.out.println("************************************");
+                System.out.println("******* Start queue checker ********");
+                System.out.println("************************************");
+
+                while (!isInterrupted()) {
+                    Iterator<DSOLockEvent> iterator = lockWaitingQueue.iterator();
+                    while (iterator.hasNext()) {
+                        DSOLockEvent lockEvent = iterator.next();
+                        if (lockMap.tryLock(lockEvent)) {
+                            log.info("========= lock aquired for " + lockEvent.getNodeId());
+                            pushToNode(lockEvent.getNodeId(), lockEvent);
+                            iterator.remove();
+                        }
+                    }
+                }
 
             }
-        }
+        };
     }
 }

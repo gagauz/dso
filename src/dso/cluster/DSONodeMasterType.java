@@ -1,5 +1,7 @@
 package dso.cluster;
 
+import dso.utils.EnvParam;
+
 public enum DSONodeMasterType implements EnvParam<DSONodeMasterType> {
 
     ALWAYS,
