@@ -1,10 +1,6 @@
 package dso.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 public class StreamUtils {
 
@@ -35,32 +31,19 @@ public class StreamUtils {
         out.flush();
     }
 
-    public static String readString(InputStream in) {
-        try {
-            byte[] bytes = new byte[1024];
-            int r = in.read(bytes);
-            if (r >= 0) {
-                return new String(bytes, 0, r);
-            }
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
+    public static String readString(InputStream in) throws Exception {
+        byte[] bytes = new byte[1024];
+        int r = in.read(bytes);
+        if (r >= 0) {
+            return new String(bytes, 0, r);
         }
-
         return null;
+
     }
 
-    public static Object readObject(InputStream in) {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(in);
-            return ois.readObject();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
+    public static Object readObject(InputStream in) throws Exception {
+        ObjectInputStream ois = new ObjectInputStream(in);
+        return ois.readObject();
     }
 
 }

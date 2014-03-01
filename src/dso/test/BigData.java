@@ -1,21 +1,19 @@
 package dso.test;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import dso.DSObject;
+public class BigData implements Serializable {
 
-public class BigData extends DSObject {
-
-	private static int counter = 1;
+    private static int counter = 1;
 
     private static final long serialVersionUID = -5025247388620814377L;
 
-	private Integer id;
+    private Integer id;
     private String name;
     private BigData parent;
     private List<BigData> children = new ArrayList<BigData>();
-
 
     public String getName() {
         return name;
@@ -52,16 +50,16 @@ public class BigData extends DSObject {
 
     @Override
     public int hashCode() {
-		if (null == id) {
-			id = counter++;
-		}
+        if (null == id) {
+            id = counter++;
+        }
         return id;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (null != obj && obj instanceof BigData) {
-			return ((BigData) obj).hashCode() == hashCode();
+            return ((BigData) obj).hashCode() == hashCode();
         }
         return this == obj;
     }
@@ -69,11 +67,11 @@ public class BigData extends DSObject {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("BigData <")
-.append("id=")
-				.append(hashCode()).append(", ")
+                .append("id=")
+                .append(hashCode()).append(", ")
                 .append("name=").append(name).append(", ");
         if (null != parent) {
-			sb.append("parent=").append(parent.hashCode()).append(", ");
+            sb.append("parent=").append(parent.hashCode()).append(", ");
         }
         sb.append("children=").append(children).append(">\n");
         return sb.toString();

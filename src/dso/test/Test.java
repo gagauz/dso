@@ -1,6 +1,6 @@
 package dso.test;
 
-import dso.event.DSOSyncRootEvent;
+import dso.event.DSOShareObjectEvent;
 import dso.thread.DSOClient;
 import dso.thread.DSOServer;
 
@@ -27,10 +27,10 @@ public class Test {
     }
 
     public static void main(String[] args) {
-        
-       final BigData b = setup();
 
-		final DSOServer srv = new DSOServer();
+        final BigData b = setup();
+
+        final DSOServer srv = new DSOServer();
 
         Thread t1 = new Thread() {
             {
@@ -39,7 +39,7 @@ public class Test {
 
             @Override
             public void run() {
-				srv.startServer();
+                srv.startServer();
             };
         };
 
@@ -57,7 +57,7 @@ public class Test {
                     e.printStackTrace();
                 }
                 System.out.println("Push 4s to cl");
-                srv.push(new DSOSyncRootEvent(b));
+                srv.propagate(null, new DSOShareObjectEvent(b));
             };
         };
 
@@ -81,16 +81,16 @@ public class Test {
                     //					sleep(1000);
                     //					b.__synchronize();
                     //                    b.__synchronize();
-					// cl1.disconnect();
+                    // cl1.disconnect();
                     System.out.println("Push 1s to srv");
-                    cl1.pushRoot(b);
+                    cl1.share(b);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             };
         };
 
-		t2.start();
+        t2.start();
 
         while (true) {
         }
