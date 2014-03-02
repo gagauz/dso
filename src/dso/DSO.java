@@ -3,7 +3,7 @@ package dso;
 import dso.cluster.DSONodeMasterType;
 import dso.thread.DSOClient;
 import dso.thread.DSOServer;
-import dso.thread.DataSharer;
+import dso.thread.DSOProcessor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ public class DSO {
 
     private static final Map<Integer, Object> objectMap = new HashMap<Integer, Object>();
 
-    public static DataSharer sharer;
+    public static DSOProcessor sharer;
 
     static {
         if (DSONodeMasterType.ALWAYS.isCurrent()) {

@@ -1,26 +1,17 @@
 package dso.thread;
 
+import dso.event.*;
+import dso.event.handler.DSOEventHandlerResolver;
+import dso.event.handler.client.DSOClientEventHandlerResolver;
+import dso.socket.api.ConnectionFactory;
+import dso.socket.impl.io.IOConnectionFactory;
+
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import dso.event.DSOEvent;
-import dso.event.DSOJoinEvent;
-import dso.event.DSOLockEvent;
-import dso.event.DSONoopEvent;
-import dso.event.DSOShareObjectEvent;
-import dso.event.DSOUnlockEvent;
-import dso.event.handler.client.DSOCLientJoinEventHandler;
-import dso.event.handler.client.DSOClientLockEventHandler;
-import dso.event.handler.client.DSOClientShareObjectEventHandler;
-import dso.event.handler.server.DSOEventHandler;
-import dso.event.handler.server.DSONoopEventHandler;
-import dso.socket.api.ConnectionFactory;
-import dso.socket.impl.io.IOConnectionFactory;
-
-public class DSOClient extends SocketWriter implements DataSharer {
+public class DSOClient extends SocketWriter implements DSOProcessor {
 
     private static final Logger log = Logger.getLogger("DSOClient");
 
@@ -28,7 +19,7 @@ public class DSOClient extends SocketWriter implements DataSharer {
 
     protected Set<Long> lockWaitingQueue = new HashSet<Long>();
 
-    private final HashMap<Class<? extends DSOEvent>, DSOEventHandler> clientEventHandlers = new HashMap<Class<? extends DSOEvent>, DSOEventHandler>();
+    private final DSOEventHandlerResolver clientEventHandlerResolver;
 
     public DSOClient() {
         this("0.0.0.0", 9999);
@@ -36,16 +27,9 @@ public class DSOClient extends SocketWriter implements DataSharer {
 
     public DSOClient(String addr, int port) {
         super(connect(addr, port));
-
-        clientEventHandlers.put(DSOLockEvent.class, new DSOClientLockEventHandler(this));
-        clientEventHandlers.put(DSOJoinEvent.class, new DSOCLientJoinEventHandler(this));
-        clientEventHandlers.put(DSONoopEvent.class, new DSONoopEventHandler());
-        clientEventHandlers.put(DSOShareObjectEvent.class, new DSOClientShareObjectEventHandler(this));
-
+        clientEventHandlerResolver = new DSOClientEventHandlerResolver(this);
         startReader();
-
         send(new DSOJoinEvent(this));
-
     }
 
     private static Socket connect(String host, int port) {
@@ -68,16 +52,8 @@ public class DSOClient extends SocketWriter implements DataSharer {
     }
 
     @Override
-    public void handleEvent(DSOEvent event) {
-        try {
-            DSOEventHandler handler = clientEventHandlers.get(event.getClass());
-            if (null == handler) {
-                throw new IllegalStateException("Unable to resolve envent handler for " + event.getClass());
-            }
-            handler.handleEvent(event);
-        } catch (Exception e) {
-            handleError(e);
-        }
+    protected DSOEventHandlerResolver getEventHandlerResolver() {
+        return clientEventHandlerResolver;
     }
 
     @Override

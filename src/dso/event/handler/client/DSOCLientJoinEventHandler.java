@@ -1,9 +1,10 @@
 package dso.event.handler.client;
 
+import dso.event.api.DSOEventHandler;
+
 import java.util.logging.Logger;
 
 import dso.event.DSOEvent;
-import dso.event.handler.server.DSOEventHandler;
 import dso.thread.DSOClient;
 
 public class DSOCLientJoinEventHandler implements DSOEventHandler {

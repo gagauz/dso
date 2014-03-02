@@ -1,15 +1,15 @@
 package dso.event;
 
-@Deprecated
-public class DSOShareObjectEvent extends DSOEvent {
+
+public class DSODeltaObjectEvent extends DSOEvent {
     private static final long serialVersionUID = -5578160500397889505L;
     private final Object object;
 
-    public DSOShareObjectEvent(Object object) {
+    public DSODeltaObjectEvent(Object object) {
         this.object = object;
     }
 
-    public Object getDelta() {
+    public Object getObject() {
         return object;
     }
 }

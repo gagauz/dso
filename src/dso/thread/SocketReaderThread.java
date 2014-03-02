@@ -1,9 +1,8 @@
 package dso.thread;
 
-import dso.event.error.DSOEventErrorHandler;
-
 import dso.event.DSOEvent;
-import dso.event.handler.server.DSOEventHandler;
+import dso.event.api.DSOEventProcessor;
+import dso.event.error.DSOEventException;
 import dso.stream.api.SocketObjectReader;
 import dso.stream.impl.io.DSOSocketReader;
 
@@ -12,13 +11,11 @@ import java.net.Socket;
 public class SocketReaderThread extends Thread {
 
     private final SocketObjectReader reader;
-    private final DSOEventHandler eventHandler;
-    private final DSOEventErrorHandler errorHandler;
+    private final DSOEventProcessor eventProcessor;
 
-    public SocketReaderThread(Socket socket, DSOEventHandler eventHandler, DSOEventErrorHandler errorHandler) {
+    public SocketReaderThread(Socket socket, DSOEventProcessor eventProcessor) {
         this.reader = new DSOSocketReader(socket);
-        this.eventHandler = eventHandler;
-        this.errorHandler = errorHandler;
+        this.eventProcessor = eventProcessor;
     }
 
     @Override
@@ -36,12 +33,12 @@ public class SocketReaderThread extends Thread {
                 }
                 if (event instanceof DSOEvent) {
                     //Handle
-                    eventHandler.handleEvent((DSOEvent) event);
+                    eventProcessor.handleEvent((DSOEvent) event);
                 } else {
-                    throw new IllegalStateException("The object is not DSOEvent instance " + event.getClass());
+                    throw new DSOEventException("The object is not DSOEvent instance " + event.getClass());
                 }
             } catch (Exception e) {
-                errorHandler.handleError(e);
+                eventProcessor.handleError(e);
             }
         }
     }

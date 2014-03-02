@@ -1,20 +1,11 @@
 package dso.test;
 
-import java.io.InputStream;
-
-import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassAdapter;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodAdapter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
-
 import dso.annotation.Locked;
 import dso.annotation.Shared;
+import dso.bytecode.SharedClassVisitor;
+import org.objectweb.asm.*;
+
+import java.io.InputStream;
 
 public class TestAsm extends ClassLoader implements Opcodes {
 
@@ -36,8 +27,8 @@ public class TestAsm extends ClassLoader implements Opcodes {
         try {
             ClassReader reader = new ClassReader(is);
             ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-            ClassVisitor visitor = new TraceFieldClassAdapter(writer);
-            reader.accept(visitor, 0);
+            ClassVisitor visitor = new SharedClassVisitor(writer);
+            reader.accept(visitor, ClassReader.EXPAND_FRAMES);
             b = writer.toByteArray();
         } catch (Exception e) {
             throw new ClassNotFoundException(name, e);
@@ -59,7 +50,7 @@ public class TestAsm extends ClassLoader implements Opcodes {
             Object b = bdClass.newInstance();
 
             bdClass.getMethod("getName").invoke(b);
-            bdClass.getMethod("setName", String.class).invoke(b, "newName");
+            bdClass.getMethod("setName", String.class).invoke(b, "");
             System.out.println(bdClass.getMethod("getName").invoke(b).toString());
             bdClass.getMethod("toString").invoke(b);
 
@@ -82,7 +73,7 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
 
     @Override
     public void visit(final int version, final int access, final String name, final String signature,
-                    final String superName, final String[] interfaces) {
+                      final String superName, final String[] interfaces) {
         owner = name;
         super.visit(version, access, name, signature, superName, interfaces);
     }
@@ -96,7 +87,7 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
 
     @Override
     public FieldVisitor visitField(final int access, final String name, final String desc, final String signature,
-                    final Object value) {
+                                   final Object value) {
         FieldVisitor fv = super.visitField(access, name, desc, signature, value);
         System.out.println(name + " " + desc);
         if (!shared) {
@@ -162,7 +153,7 @@ class TraceFieldClassAdapter extends ClassAdapter implements Opcodes {
 
     @Override
     public MethodVisitor visitMethod(final int access, final String name, final String desc, final String signature,
-                    final String[] exceptions) {
+                                     final String[] exceptions) {
         MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
         return mv == null ? null : new LockedAnnotaionAdapter(mv, owner, name);
     }

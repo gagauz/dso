@@ -1,5 +1,7 @@
 package dso.event.handler.server;
 
+import dso.event.api.DSOEventHandler;
+
 import dso.event.DSOEvent;
 import dso.thread.DSOServer;
 import dso.thread.DSOServerThread;

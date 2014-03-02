@@ -1,9 +1,9 @@
 package dso.thread;
 
-import dso.event.error.DSOEventErrorHandler;
-
 import dso.event.DSOEvent;
-import dso.event.handler.server.DSOEventHandler;
+import dso.event.api.DSOEventHandler;
+import dso.event.api.DSOEventProcessor;
+import dso.event.handler.DSOEventHandlerResolver;
 import dso.stream.api.SocketObjectWriter;
 import dso.stream.impl.io.DSOSocketWriter;
 
@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.logging.Logger;
 
-public class SocketWriter implements DSOEventHandler, DSOEventErrorHandler {
+abstract public class SocketWriter implements DSOEventProcessor {
 
     private static final Logger log = Logger.getLogger("DSOClientServer");
 
@@ -28,13 +28,20 @@ public class SocketWriter implements DSOEventHandler, DSOEventErrorHandler {
         writer.writeObject(event);
     }
 
-    public void back(DSOEvent event) {
-        writer.writeObject(event);
-    }
+    abstract protected DSOEventHandlerResolver getEventHandlerResolver();
 
     @Override
     public void handleEvent(DSOEvent event) {
-        log.info("handle " + event);
+        if (null == event) {
+            log.warning("Event is null");
+            return;
+        }
+        try {
+            DSOEventHandler handler = getEventHandlerResolver().resolve(event);
+            handler.handleEvent(event);
+        } catch (Exception e) {
+            handleError(e);
+        }
     }
 
     @Override
@@ -47,7 +54,7 @@ public class SocketWriter implements DSOEventHandler, DSOEventErrorHandler {
     }
 
     public void startReader() {
-        readerThread = new SocketReaderThread(socket, this, this);
+        readerThread = new SocketReaderThread(socket, this);
         readerThread.start();
     }
 

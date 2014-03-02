@@ -19,7 +19,7 @@ import dso.socket.api.ConnectionFactory;
 import dso.socket.api.ServerConnection;
 import dso.socket.impl.io.IOConnectionFactory;
 
-public class DSOServer extends Thread implements DataSharer {
+public class DSOServer extends Thread implements DSOProcessor {
 
     public static boolean SERVER = false;
 

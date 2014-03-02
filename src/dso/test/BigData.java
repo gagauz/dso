@@ -1,11 +1,11 @@
 package dso.test;
 
+import dso.annotation.Locked;
+import dso.annotation.Shared;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
-import dso.annotation.Locked;
-import dso.annotation.Shared;
 
 @Shared
 public class BigData implements Serializable {
@@ -29,6 +29,9 @@ public class BigData implements Serializable {
 
     @Locked
     public void setName(String name) {
+        if ("".equals(name)) {
+            throw new RuntimeException();
+        }
         this.name = name;
     }
 

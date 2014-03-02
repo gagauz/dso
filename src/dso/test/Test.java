@@ -27,7 +27,19 @@ public class Test {
     }
 
     public static void main(String[] args) {
+        System.out.println(test());
+    }
 
+    private static int test() {
+        try {
+            return 2 + 2;
+        } finally {
+            return 1 + 1;
+        }
+
+    }
+
+    void none() {
         final BigData b = setup();
 
         final DSOServer srv = new DSOServer();

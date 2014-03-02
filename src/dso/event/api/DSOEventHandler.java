@@ -1,4 +1,4 @@
-package dso.event.handler.server;
+package dso.event.api;
 
 import dso.event.DSOEvent;
 

@@ -1,8 +1,9 @@
 package dso.event.handler.client;
 
+import dso.event.api.DSOEventHandler;
+
 import dso.event.DSOEvent;
 import dso.event.DSOLockEvent;
-import dso.event.handler.server.DSOEventHandler;
 import dso.thread.DSOClient;
 
 public class DSOClientLockEventHandler implements DSOEventHandler {

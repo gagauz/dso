@@ -1,6 +1,6 @@
 package dso.thread;
 
-public interface DataSharer {
+public interface DSOProcessor {
 	void noop();
 
     void share(Object object);
