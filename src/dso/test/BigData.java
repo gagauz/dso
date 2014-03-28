@@ -28,11 +28,15 @@ public class BigData implements Serializable {
     }
 
     @Locked
-    public void setName(String name) {
-        if ("".equals(name)) {
-            throw new RuntimeException();
+    public synchronized void setName(String name) {
+        System.out.println("setName1 " + name);
+        synchronized (this) {
+            System.out.println("setName2 " + name);
+            if ("".equals(name)) {
+                throw new RuntimeException();
+            }
+            this.name = name;
         }
-        this.name = name;
     }
 
     public BigData getParent() {
@@ -59,7 +63,11 @@ public class BigData implements Serializable {
 
     @Locked
     public void setChildren(List<BigData> children) {
-        this.children = children;
+        try {
+            this.children = children;
+        } finally {
+
+        }
     }
 
     @Override

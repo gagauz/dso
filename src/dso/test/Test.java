@@ -19,7 +19,7 @@ public class Test {
         return p;
     }
 
-    public static BigData add(BigData parent) {
+    public static synchronized BigData add(BigData parent) {
         BigData b = new BigData();
         b.setName("child " + s++);
         b.setParent(parent);
