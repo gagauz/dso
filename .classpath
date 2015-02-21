@@ -3,5 +3,5 @@
   <classpathentry kind="src" path="src" including="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-  <classpathentry kind="var" path="M2_REPO/asm/asm/3.3.x/asm-3.3.x.jar" sourcepath="M2_REPO/asm/asm/3.3.x/asm-3.3.x-sources.jar"/>
+  <classpathentry kind="var" path="M2_REPO/asm/asm/3.3.1/asm-3.3.1.jar"/>
 </classpath>
