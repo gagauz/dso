@@ -1,8 +1,5 @@
 set file.encoding=UTF-8
-set MAVEN_OPTS=%MAVEN_OPTS% -Xmx1424m -Xms1424m -XX:PermSize=200M -XX:MaxPermSize=200M
-
-
-
+set JAVA_HOME=R:/jdk1.7
 call mvn -e clean install -Dmaven.test.skip=false -DdownloadSources=true -DdownloadSource=true
 
 

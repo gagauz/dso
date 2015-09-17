@@ -3,7 +3,7 @@
   <classpathentry kind="src" path="src" including="**/*.java"/>
   <classpathentry kind="src" path="resources" excluding="**/*.java"/>
   <classpathentry kind="output" path="target/classes"/>
-  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
   <classpathentry kind="var" path="M2_REPO/javassist/javassist/3.12.1.GA/javassist-3.12.1.GA.jar" sourcepath="M2_REPO/javassist/javassist/3.12.1.GA/javassist-3.12.1.GA-sources.jar">
     <attributes>
       <attribute value="jar:file:/R:/maven_repo/javassist/javassist/3.12.1.GA/javassist-3.12.1.GA-javadoc.jar!/" name="javadoc_location"/>
