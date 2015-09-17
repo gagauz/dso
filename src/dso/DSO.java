@@ -76,8 +76,16 @@ public class DSO {
         sharer.unlock(object, string);
     }
 
-	public static void noop() {
-		log.info("Noop");
-		sharer.noop();
-	}
+    public static void checkFieldAccessBegin(Object object, String string) {
+        log.info("Check access begin " + object + " " + string);
+    }
+
+    public static void checkFieldAccessEnd(Object object, String string) {
+        log.info("Check access end " + object + " " + string);
+    }
+
+    public static void noop() {
+        log.info("Noop");
+        sharer.noop();
+    }
 }

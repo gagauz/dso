@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-
 public class DSOServer extends Thread implements DSOProcessor {
 
     public static boolean SERVER = false;
@@ -130,8 +129,8 @@ public class DSOServer extends Thread implements DSOProcessor {
 
     @Override
     public void lock(Object object, String method) {
-        log.info("waiting for local lock " + object + "." + method);
         while (!lockMap.tryLock(object, method)) {
+            log.info("waiting for local lock " + object + "." + method);
             Thread.yield();
         }
         log.info("+++++++++ lock aquired");
