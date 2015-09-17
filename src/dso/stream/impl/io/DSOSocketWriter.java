@@ -3,7 +3,7 @@ package dso.stream.impl.io;
 import dso.stream.api.SocketObjectWriter;
 import dso.utils.StreamUtils;
 
-
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -12,9 +12,9 @@ public class DSOSocketWriter implements SocketObjectWriter {
     private final OutputStream wStream;
 
     public DSOSocketWriter(Socket socket) {
-        System.out.println("*************************************************************");
-        System.out.println("****** Create DSOSocketWriter " + socket.getInetAddress() + ":" + socket.getPort() + " ************");
-        System.out.println("*************************************************************");
+        System.out.println("+--------------------------------------------------------------------------+");
+        System.out.println("| Create DSOSocketWriter " + socket.getInetAddress() + ":" + socket.getPort() + " |");
+        System.out.println("+--------------------------------------------------------------------------+");
         try {
             wStream = socket.getOutputStream();
         } catch (Exception e) {
@@ -23,12 +23,8 @@ public class DSOSocketWriter implements SocketObjectWriter {
     }
 
     @Override
-    public synchronized void writeObject(Object obj) {
-        try {
-            StreamUtils.writeObject(wStream, obj);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public synchronized void writeObject(Object obj) throws IOException {
+        StreamUtils.writeObject(wStream, obj);
     }
 
 }

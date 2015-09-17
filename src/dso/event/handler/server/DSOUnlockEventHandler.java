@@ -1,13 +1,12 @@
 package dso.event.handler.server;
 
-import dso.event.DSOEvent;
 import dso.event.DSOUnlockEvent;
 import dso.event.api.DSOEventHandler;
 import dso.thread.DSOServerThread;
 
 import java.util.logging.Logger;
 
-public class DSOUnlockEventHandler implements DSOEventHandler {
+public class DSOUnlockEventHandler implements DSOEventHandler<DSOUnlockEvent> {
 
     private static final Logger log = Logger.getLogger("DSOLockEventHandler");
 
@@ -18,9 +17,9 @@ public class DSOUnlockEventHandler implements DSOEventHandler {
     }
 
     @Override
-    public void handleEvent(DSOEvent event) {
-        log.info("** Handle lock event");
-        DSOUnlockEvent lockEvent = (DSOUnlockEvent) event;
+    public void handleEvent(DSOUnlockEvent event) {
+        log.info("** Handle unlock event");
+        DSOUnlockEvent lockEvent = event;
         dsoServerThread.getDsoServer().unlock(lockEvent);
     }
 }

@@ -1,7 +1,9 @@
 package dso.thread;
 
 import dso.LockMap;
-import dso.event.*;
+import dso.event.DSOEvent;
+import dso.event.DSOLockEvent;
+import dso.event.DSOUnlockEvent;
 import dso.socket.api.ClientConnection;
 import dso.socket.api.ConnectionFactory;
 import dso.socket.api.ServerConnection;
@@ -118,22 +120,12 @@ public class DSOServer extends Thread implements DSOProcessor {
     }
 
     @Override
-    public void noop() {
-        propagate(null, new DSONoopEvent());
-    }
-
-    @Override
-    public void share(Object object) {
-        propagate(null, new DSOShareObjectEvent(object));
-    }
-
-    @Override
     public void lock(Object object, String method) {
         while (!lockMap.tryLock(object, method)) {
-            log.info("waiting for local lock " + object + "." + method);
+            log.info("--- waiting for local lock " + object + "." + method);
             Thread.yield();
         }
-        log.info("+++++++++ lock aquired");
+        log.info("+++ lock aquired");
     }
 
     @Override

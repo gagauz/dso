@@ -1,8 +1,9 @@
 package dso.thread;
 
-import dso.event.*;
-import dso.event.handler.DSOEventHandlerResolver;
-import dso.event.handler.client.DSOClientEventHandlerResolver;
+import dso.event.DSOEvent;
+import dso.event.DSOJoinEvent;
+import dso.event.DSOLockEvent;
+import dso.event.DSOUnlockEvent;
 import dso.socket.api.ConnectionFactory;
 import dso.socket.impl.io.IOConnectionFactory;
 
@@ -19,15 +20,12 @@ public class DSOClient extends SocketWriter implements DSOProcessor {
 
     protected Set<Long> lockWaitingQueue = new HashSet<Long>();
 
-    private final DSOEventHandlerResolver clientEventHandlerResolver;
-
     public DSOClient() {
         this("0.0.0.0", 9999);
     }
 
     public DSOClient(String addr, int port) {
         super(connect(addr, port));
-        clientEventHandlerResolver = new DSOClientEventHandlerResolver(this);
         startReader();
         send(new DSOJoinEvent(this));
     }
@@ -52,27 +50,12 @@ public class DSOClient extends SocketWriter implements DSOProcessor {
     }
 
     @Override
-    protected DSOEventHandlerResolver getEventHandlerResolver() {
-        return clientEventHandlerResolver;
-    }
-
-    @Override
-    public void noop() {
-        send(new DSONoopEvent());
-    }
-
-    @Override
-    public void share(Object object) {
-        log.info("Server <<< Share object");
-        send(new DSOShareObjectEvent(object));
-    }
-
-    @Override
     public void lock(Object object, String name) {
         // Request for lock, sleep until response
         log.info("> request for lock " + object + " " + name);
         requestForLock(Thread.currentThread(), object, name);
-        while (!isLockGranded(Thread.currentThread())) {
+        while (lockWaitingQueue.contains(Thread.currentThread())) {
+            log.info("..waiting..");
             Thread.yield();
         }
         log.info("<< lock granted");
@@ -83,17 +66,20 @@ public class DSOClient extends SocketWriter implements DSOProcessor {
         send(new DSOUnlockEvent(Thread.currentThread().getId(), object, name));
     }
 
-    public void grantLock(DSOLockEvent event) {
-        log.info(">> Grant lock for thread " + event.getThreadId());
-        lockWaitingQueue.remove(event.getThreadId());
-    }
-
-    private boolean isLockGranded(Thread thread) {
-        return !lockWaitingQueue.contains(thread.getId());
-    }
-
     private void requestForLock(Thread thread, Object object, String name) {
         lockWaitingQueue.add(thread.getId());
         send(new DSOLockEvent(thread.getId(), object, name));
+    }
+
+    @Override
+    protected void handleEventInternal(DSOEvent event) {
+        if (event instanceof DSOLockEvent) {
+            DSOLockEvent lockEvent = (DSOLockEvent) event;
+            log.info(">> Lock request handle result" + lockEvent.getThreadId());
+            lockWaitingQueue.remove(lockEvent.getThreadId());
+        } else if (event instanceof DSOUnlockEvent) {
+            DSOUnlockEvent lockEvent = (DSOUnlockEvent) event;
+            log.info(">> Unlock request handle result " + lockEvent.getThreadId());
+        }
     }
 }

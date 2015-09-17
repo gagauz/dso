@@ -2,7 +2,6 @@ package dso;
 
 import dso.cluster.DSONodeType;
 import dso.object.DSOChange;
-import dso.object.DSObject;
 import dso.thread.DSOClient;
 import dso.thread.DSOProcessor;
 import dso.thread.DSOServer;
@@ -71,18 +70,13 @@ public class DSO {
         objectGlobalMap.put(object.hashCode(), object);
     }
 
-    public static void share(Object object) {
-        log.info("Share object");
-        sharer.share(object);
-    }
-
-    public static void lock(DSObject object, String methodName) {
-        Map map = lockMap.get(object.__get_dso_UID());
-        if (null != map) {
-            if (null != map.get(methodName)) {
-                return;
-            }
-        }
+    public static void lock(Object object, String methodName) {
+        //        Map map = lockMap.get(object.__get_dso_UID());
+        //        if (null != map) {
+        //            if (null != map.get(methodName)) {
+        //                return;
+        //            }
+        //        }
         log.info("Lock on object " + object.getClass().getName() + '.' + methodName);
         sharer.lock(object, methodName);
     }
@@ -98,11 +92,6 @@ public class DSO {
 
     public static void checkFieldAccessEnd(Object object, String string) {
         log.info("Check access end " + object + " " + string);
-    }
-
-    public static void noop() {
-        log.info("Noop");
-        sharer.noop();
     }
 
     public static void putClusteredObject(String key, Object value) {

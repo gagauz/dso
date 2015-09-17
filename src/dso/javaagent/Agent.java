@@ -4,7 +4,6 @@ import dso.DSO;
 import dso.annotation.Locked;
 import dso.annotation.Root;
 import dso.annotation.Shared;
-import dso.object.DSManager;
 import javassist.*;
 import javassist.expr.ExprEditor;
 import javassist.expr.FieldAccess;
@@ -16,7 +15,6 @@ import java.security.ProtectionDomain;
 
 public class Agent {
 
-    private static final String DSO_MANAGER_CLASS = DSManager.class.getName();
     private static final String DSO_CLASS = DSO.class.getName();
 
     public static void premain(String args, Instrumentation inst) {

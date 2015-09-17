@@ -1,7 +1,9 @@
 package dso.thread;
 
-import dso.event.handler.DSOEventHandlerResolver;
-import dso.event.handler.server.DSOServerEventHandlerResolver;
+import dso.event.DSOEvent;
+import dso.event.DSOJoinEvent;
+import dso.event.DSOLockEvent;
+import dso.event.DSOUnlockEvent;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -12,18 +14,10 @@ public class DSOServerThread extends SocketWriter {
     private final DSOServer dsoServer;
     private static final Logger log = Logger.getLogger("DSOServerThread");
 
-    private final DSOEventHandlerResolver serverEventHandlerResolver;
-
     public DSOServerThread(DSOServer dsoServer, Socket socket) throws IOException {
         super(socket);
         this.dsoServer = dsoServer;
         this.dsoServer.appendServerThread(this);
-        this.serverEventHandlerResolver = new DSOServerEventHandlerResolver(this);
-    }
-
-    @Override
-    protected DSOEventHandlerResolver getEventHandlerResolver() {
-        return serverEventHandlerResolver;
     }
 
     @Override
@@ -45,5 +39,21 @@ public class DSOServerThread extends SocketWriter {
 
     public DSOServer getDsoServer() {
         return dsoServer;
+    }
+
+    @Override
+    protected void handleEventInternal(DSOEvent event) {
+        if (event instanceof DSOJoinEvent) {
+            System.out.println("HANDLE JOIN EVENT / " + this);
+        } else if (event instanceof DSOLockEvent) {
+            log.info("** Handle lock event");
+            DSOLockEvent lockEvent = (DSOLockEvent) event;
+            lockEvent.setNodeId(hashCode());
+            getDsoServer().lock(lockEvent);
+        } else if (event instanceof DSOUnlockEvent) {
+            log.info("** Handle unlock event");
+            DSOUnlockEvent lockEvent = (DSOUnlockEvent) event;
+            getDsoServer().unlock(lockEvent);
+        }
     }
 }

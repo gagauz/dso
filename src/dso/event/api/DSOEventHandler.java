@@ -2,6 +2,6 @@ package dso.event.api;
 
 import dso.event.DSOEvent;
 
-public interface DSOEventHandler {
-    void handleEvent(DSOEvent event);
+public interface DSOEventHandler<E extends DSOEvent> {
+    void handleEvent(E event);
 }
