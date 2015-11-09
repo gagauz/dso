@@ -1,83 +1,76 @@
 package dso.thread;
 
-import dso.LockMap;
+import java.io.IOException;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
+import dso.cluster.Cluster;
+import dso.cluster.Node;
 import dso.event.DSOEvent;
-import dso.event.DSOLockEvent;
-import dso.event.DSOUnlockEvent;
+import dso.event.JoinEvent;
+import dso.event.LeaveEvent;
 import dso.socket.api.ClientConnection;
 import dso.socket.api.ConnectionFactory;
 import dso.socket.api.ServerConnection;
 import dso.socket.impl.io.IOConnectionFactory;
 
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
-
-public class DSOServer extends Thread implements DSOProcessor {
+public class DSOServer implements Runnable, DSOProcessor {
 
     public static boolean SERVER = false;
 
     private static final Logger log = Logger.getLogger("DSOServer");
 
-    private static final LockMap lockMap = new LockMap();
-    private static ArrayDeque<DSOLockEvent> lockWaitingQueue = new ArrayDeque<DSOLockEvent>();
-    private static final Map<Integer, DSOServerThread> slaveNodes = new ConcurrentHashMap<Integer, DSOServerThread>();
+    private static final List<ServerThread> slaveNodes = new ArrayList<>();
     private static final ConnectionFactory connetcionFactory = new IOConnectionFactory();
-    private ServerConnection server;
-    private Thread lockQueueChecker;
-
-    public DSOServer() {
-        setDaemon(true);
-    }
-
-    @Override
-    public synchronized void start() {
-        throw new IllegalStateException("Don't call start on DSOServer thread, use startServer() method!");
-    }
+    private ServerConnection serverConnection;
+    private Thread serverThread;
+    private Node serverNode;
 
     public void stopServer() {
-        if (null != server) {
-            for (DSOServerThread node : new ArrayList<DSOServerThread>(slaveNodes.values())) {
+        if (null != serverConnection) {
+            Cluster cluster = Cluster.removeNode(serverNode);
+            propagate(new LeaveEvent(cluster));
+            for (ServerThread node : new ArrayList<ServerThread>(slaveNodes)) {
                 node.closeSocket();
             }
             try {
-                server.close();
+                serverConnection.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            interrupt();
-        }
-
-        if (null != lockQueueChecker) {
-            lockQueueChecker.interrupt();
+            serverThread.interrupt();
         }
     }
 
     public void startServer() {
+        if (null != serverThread) {
+            throw new IllegalStateException("ServerThread is already assigned. Don't start server twice!");
+        }
         int port = 9999;
         try {
-            server = connetcionFactory.createServer(port);
-            String addr = server.getAddress();
-            log.info("**** Start server on " + addr + " ****");
+            serverConnection = connetcionFactory.createServer(port);
+            String address = serverConnection.getAddress();
+            Cluster cluster = Cluster.addServer(address);
+            serverNode = cluster.getNode();
+            log.info("**** Start server on " + address + " ****");
         } catch (Exception e) {
             throw new RuntimeException("Failed to start server", e);
         }
-        super.start();
-        lockQueueChecker = startLockQueueChecker();
+        serverThread = new Thread(this);
+        serverThread.start();
     }
 
     @Override
     public void run() {
         try {
-
-            while (!isInterrupted()) {
+            // Wait for the client connections
+            while (!serverThread.isInterrupted()) {
                 log.info("**** Waiting for clients... ****");
-                ClientConnection socket = server.accept();
-                new DSOServerThread(this, socket.getSocket());
+                ClientConnection socket = serverConnection.acceptClientConnection();
+                log.info("**** Accepted client " + socket.getSocket().getRemoteSocketAddress() + "... ****");
+                new ServerThread(socket.getSocket());
             }
 
         } catch (IOException e) {
@@ -87,9 +80,9 @@ public class DSOServer extends Thread implements DSOProcessor {
         }
     }
 
-    public void propagate(DSOServerThread initiator, DSOEvent dsoEvent) {
+    public void propagate(ServerThread initiator, DSOEvent dsoEvent) {
         log.info("Propagate to slaves " + dsoEvent.getClass());
-        for (DSOServerThread slave : slaveNodes.values()) {
+        for (ServerThread slave : slaveNodes) {
             if (!slave.equals(initiator)) {
                 log.info("Client <<< Push event to slave " + slave.hashCode());
                 slave.send(dsoEvent);
@@ -97,9 +90,17 @@ public class DSOServer extends Thread implements DSOProcessor {
         }
     }
 
+    public void propagate(DSOEvent dsoEvent) {
+        log.info("Propagate to slaves " + dsoEvent.getClass());
+        for (ServerThread slave : slaveNodes) {
+            log.info("Client <<< Push event to slave " + slave.hashCode());
+            slave.send(dsoEvent);
+        }
+    }
+
     public void pushToNode(int nodeId, DSOEvent dsoEvent) {
         log.info("Propagate to one slave " + dsoEvent.getClass());
-        DSOServerThread slave = slaveNodes.get(nodeId);
+        ServerThread slave = slaveNodes.get(nodeId);
         if (null != slave) {
             log.info("Client <<< Push event to slave " + slave.hashCode());
             slave.send(dsoEvent);
@@ -108,68 +109,42 @@ public class DSOServer extends Thread implements DSOProcessor {
         }
     }
 
-    public void appendServerThread(DSOServerThread dsoServerThread) {
-        System.out.println("*** Node " + dsoServerThread.hashCode() + " joined cluster");
-        slaveNodes.put(dsoServerThread.hashCode(), dsoServerThread);
-        dsoServerThread.startReader();
-    }
+    class ServerThread extends SocketWriter {
+        private final Node node;
 
-    public void removeServerThread(DSOServerThread dsoServerThread) {
-        System.out.println("*** Node " + dsoServerThread.hashCode() + " left cluster");
-        slaveNodes.remove(dsoServerThread.hashCode());
-    }
-
-    @Override
-    public void lock(Object object, String method) {
-        while (!lockMap.tryLock(object, method)) {
-            log.info("--- waiting for local lock " + object + "." + method);
-            Thread.yield();
+        private ServerThread(Socket socket) throws IOException {
+            super(socket);
+            // Make snapshot of current cluster state
+            Cluster cluster = Cluster.addClient(socket.getInetAddress().getHostName());
+            node = cluster.getNode();
+            System.out.println("*** Node " + node.getNodeId() + " connected to the server. Starting thread for this node.");
+            slaveNodes.add(this);
+            startReader();
+            propagate(new JoinEvent(cluster));
         }
-        log.info("+++ lock aquired");
-    }
 
-    @Override
-    public void unlock(Object object, String method) {
-        log.info("server unlock " + object + "." + method);
-        lockMap.unlock(object, method);
-    }
+        @Override
+        public void closeSocket() {
+            System.out.println("*** Node " + node.getNodeId() + " left cluster");
+            slaveNodes.remove(this);
+            super.closeSocket();
+        }
 
-    public void lock(DSOLockEvent lockEvent) {
-        log.info("Add lock event in queue");
-        lockWaitingQueue.addLast(lockEvent);
-    }
-
-    public void unlock(DSOUnlockEvent lockEvent) {
-        log.info("Unlock from client");
-        lockMap.unlock(lockEvent.getClassName(), lockEvent.getObjectHash(), lockEvent.getMethodName());
-    }
-
-    private Thread startLockQueueChecker() {
-        return new Thread() {
-            {
-                setDaemon(true);
-                start();
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
             }
-
-            @Override
-            public void run() {
-                System.out.println("************************************");
-                System.out.println("******* Start queue checker ********");
-                System.out.println("************************************");
-
-                while (!isInterrupted()) {
-                    Iterator<DSOLockEvent> iterator = lockWaitingQueue.iterator();
-                    while (iterator.hasNext()) {
-                        DSOLockEvent lockEvent = iterator.next();
-                        if (lockMap.tryLock(lockEvent)) {
-                            log.info("========= lock aquired for " + lockEvent.getNodeId());
-                            pushToNode(lockEvent.getNodeId(), lockEvent);
-                            iterator.remove();
-                        }
-                    }
-                }
-
+            if (null != obj && obj instanceof ServerThread) {
+                return ((ServerThread) obj).readerThread.equals(readerThread);
             }
-        };
+            return false;
+        }
+
+        @Override
+        protected void handleEventInternal(DSOEvent event) {
+            log.info("Handle event " + event);
+        }
     }
+
 }

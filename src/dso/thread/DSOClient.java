@@ -1,16 +1,15 @@
 package dso.thread;
 
-import dso.event.DSOEvent;
-import dso.event.DSOJoinEvent;
-import dso.event.DSOLockEvent;
-import dso.event.DSOUnlockEvent;
-import dso.socket.api.ConnectionFactory;
-import dso.socket.impl.io.IOConnectionFactory;
-
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import dso.cluster.Cluster;
+import dso.event.DSOEvent;
+import dso.event.JoinEvent;
+import dso.socket.api.ConnectionFactory;
+import dso.socket.impl.io.IOConnectionFactory;
 
 public class DSOClient extends SocketWriter implements DSOProcessor {
 
@@ -27,7 +26,6 @@ public class DSOClient extends SocketWriter implements DSOProcessor {
     public DSOClient(String addr, int port) {
         super(connect(addr, port));
         startReader();
-        send(new DSOJoinEvent(this));
     }
 
     private static Socket connect(String host, int port) {
@@ -50,36 +48,12 @@ public class DSOClient extends SocketWriter implements DSOProcessor {
     }
 
     @Override
-    public void lock(Object object, String name) {
-        // Request for lock, sleep until response
-        log.info("> request for lock " + object + " " + name);
-        requestForLock(Thread.currentThread(), object, name);
-        while (lockWaitingQueue.contains(Thread.currentThread())) {
-            log.info("..waiting..");
-            Thread.yield();
-        }
-        log.info("<< lock granted");
-    }
-
-    @Override
-    public void unlock(Object object, String name) {
-        send(new DSOUnlockEvent(Thread.currentThread().getId(), object, name));
-    }
-
-    private void requestForLock(Thread thread, Object object, String name) {
-        lockWaitingQueue.add(thread.getId());
-        send(new DSOLockEvent(thread.getId(), object, name));
-    }
-
-    @Override
-    protected void handleEventInternal(DSOEvent event) {
-        if (event instanceof DSOLockEvent) {
-            DSOLockEvent lockEvent = (DSOLockEvent) event;
-            log.info(">> Lock request handle result" + lockEvent.getThreadId());
-            lockWaitingQueue.remove(lockEvent.getThreadId());
-        } else if (event instanceof DSOUnlockEvent) {
-            DSOUnlockEvent lockEvent = (DSOUnlockEvent) event;
-            log.info(">> Unlock request handle result " + lockEvent.getThreadId());
+    protected void handleEventInternal(DSOEvent<?> event) {
+        log.info("Handle event " + event);
+        if (event instanceof JoinEvent) {
+            Cluster.accept(((JoinEvent) event).getMsg());
+            log.info("" + Cluster.getThisNode());
+            log.info("" + Cluster.getAllNodes());
         }
     }
 }

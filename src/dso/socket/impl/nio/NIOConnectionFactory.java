@@ -40,7 +40,7 @@ public class NIOConnectionFactory implements ConnectionFactory {
             }
 
             @Override
-            public ClientConnection accept() throws IOException {
+            public ClientConnection acceptClientConnection() throws IOException {
                 final SocketChannel socket = ssChannel.accept();
                 return new ClientConnection() {
                     @Override

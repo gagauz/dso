@@ -1,20 +1,20 @@
 package dso.stream.impl.io;
 
-import dso.stream.api.SocketObjectWriter;
-import dso.utils.StreamUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+
+import dso.stream.api.SocketObjectWriter;
+import dso.utils.StreamUtils;
 
 public class DSOSocketWriter implements SocketObjectWriter {
 
     private final OutputStream wStream;
 
     public DSOSocketWriter(Socket socket) {
-        System.out.println("+--------------------------------------------------------------------------+");
+        System.out.println("+-----------------------------------------+");
         System.out.println("| Create DSOSocketWriter " + socket.getInetAddress() + ":" + socket.getPort() + " |");
-        System.out.println("+--------------------------------------------------------------------------+");
+        System.out.println("+-----------------------------------------+");
         try {
             wStream = socket.getOutputStream();
         } catch (Exception e) {

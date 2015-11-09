@@ -3,7 +3,7 @@ package dso.socket.api;
 import java.io.IOException;
 
 public interface ServerConnection {
-    ClientConnection accept() throws IOException;
+    ClientConnection acceptClientConnection() throws IOException;
 
     String getAddress() throws IOException;
 

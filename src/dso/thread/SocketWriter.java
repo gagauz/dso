@@ -1,14 +1,14 @@
 package dso.thread;
 
-import dso.event.DSOEvent;
-import dso.event.api.DSOEventProcessor;
-import dso.stream.api.SocketObjectWriter;
-import dso.stream.impl.io.DSOSocketWriter;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.logging.Logger;
+
+import dso.event.DSOEvent;
+import dso.event.api.DSOEventProcessor;
+import dso.stream.api.SocketObjectWriter;
+import dso.stream.impl.io.DSOSocketWriter;
 
 abstract public class SocketWriter implements DSOEventProcessor {
 
@@ -23,7 +23,7 @@ abstract public class SocketWriter implements DSOEventProcessor {
         this.writer = new DSOSocketWriter(socket);
     }
 
-    public void send(DSOEvent event) {
+    public void send(DSOEvent<?> event) {
         try {
             writer.writeObject(event);
         } catch (IOException e) {
@@ -31,7 +31,7 @@ abstract public class SocketWriter implements DSOEventProcessor {
         }
     }
 
-    abstract protected void handleEventInternal(DSOEvent event);
+    abstract protected void handleEventInternal(DSOEvent<?> event);
 
     @Override
     public void handleEvent(DSOEvent event) {

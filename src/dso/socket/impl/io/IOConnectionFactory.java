@@ -1,27 +1,27 @@
 package dso.socket.impl.io;
 
-import dso.socket.api.ClientConnection;
-import dso.socket.api.ConnectionFactory;
-import dso.socket.api.ServerConnection;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import dso.socket.api.ClientConnection;
+import dso.socket.api.ConnectionFactory;
+import dso.socket.api.ServerConnection;
 
 public class IOConnectionFactory implements ConnectionFactory {
 
     @Override
     public ClientConnection createClient(final String host, final int port) throws IOException {
         return new ClientConnection() {
-            final Socket socket;
+            final Socket clientSocket;
             {
-                socket = new Socket(InetAddress.getByName(host), port);
+                clientSocket = new Socket(InetAddress.getByName(host), port);
             }
 
             @Override
             public Socket getSocket() {
-                return socket;
+                return clientSocket;
             }
         };
     }
@@ -29,14 +29,14 @@ public class IOConnectionFactory implements ConnectionFactory {
     @Override
     public ServerConnection createServer(final int port) throws IOException {
         return new ServerConnection() {
-            private final ServerSocket server;
+            private final ServerSocket serverSocket;
             {
-                server = new ServerSocket(port);
+                serverSocket = new ServerSocket(port);
             }
 
             @Override
-            public ClientConnection accept() throws IOException {
-                final Socket socket = server.accept();
+            public ClientConnection acceptClientConnection() throws IOException {
+                final Socket socket = serverSocket.accept();
                 return new ClientConnection() {
                     @Override
                     public Socket getSocket() {
@@ -47,12 +47,12 @@ public class IOConnectionFactory implements ConnectionFactory {
 
             @Override
             public String getAddress() {
-                return server.getInetAddress().getHostName();
+                return serverSocket.getInetAddress().getHostName();
             }
 
             @Override
             public void close() throws IOException {
-                server.close();
+                serverSocket.close();
             }
         };
     }
